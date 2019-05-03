@@ -37,7 +37,6 @@ def help_message():
     clp rm         |    remove a key value pair
     clp ls         |    list all keys
     clp update     |    update clipr
-    clp install    |    install clipr
     clp help       |    help 
 
     """
