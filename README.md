@@ -6,9 +6,7 @@ the same things over and over:
 - look up a key easily with tab auto-complete
 - Clipr will automatically copy it's value to clipboard
 
-## Installation
-
-### Prerequisites
+## Prerequisites
 
 Clipr requires xclip, a command line interface to X selections. Check it's
 installed with:
@@ -19,17 +17,17 @@ Or install with your operating system's package manager. For example:
 
     $ sudo apt install xclip
 
-### Install on Linux
+## Install on Linux
 
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
     $ ./clp install-l && . ~/.bashrc
 
-### Install on MacOS
+## Install on MacOS
  
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
     $ ./clp install-m && . ~/.bash_profile
 
-### Help
+## Help
 
     $ clp help
     
