@@ -46,11 +46,14 @@ def help_message():
 
 def store():
 
-    key_store = input("key to store: ")
+    key_store = input("key to store: ") 
+    if (len(key_store.split()) > 1):
+        print("please enter a one word key")
+        store()
     value_store = input("value to store: ")
+
     keys = read_to_dict()
     keys[key_store] = value_store
-    
     write_to_file(keys)
 
     print("added key: " + key_store)
@@ -91,8 +94,9 @@ def list_keys():
 def update():
     
     pathname = os.path.dirname(__file__)
-    update = ("cd %s && git status") % (pathname)
+    update = ("cd %s && git reset --hard && git pull origin master") % (pathname)
     os.system(update)
+    sys.exit()
 
 def retrieve():
     
