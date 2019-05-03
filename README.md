@@ -16,7 +16,7 @@ the same things over and over:
 ### MacOS
  
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
-    $ ./clp install-m . ~/.bash_profile
+    $ ./clp install-m && . ~/.bash_profile
 
 ### Help
 
