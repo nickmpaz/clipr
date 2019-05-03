@@ -8,6 +8,17 @@ the same things over and over:
 
 ## Installation
 
+### Prerequisites
+
+Clipr requires xclip, a command line interface to X selections. Check it's
+installed with:
+    
+    $ xclip -version
+
+Or install with your operating system's package manager. For example:
+
+    $ sudo apt install xclip
+
 ### Linux
 
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
