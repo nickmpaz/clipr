@@ -19,12 +19,12 @@ Or install with your operating system's package manager. For example:
 
     $ sudo apt install xclip
 
-### Linux
+### Install on Linux
 
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
     $ ./clp install-l && . ~/.bashrc
 
-### MacOS
+### Install on MacOS
  
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
     $ ./clp install-m && . ~/.bash_profile
