@@ -5,7 +5,6 @@ from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
 FILE_NAME = "clipr.txt"
-TEMP_NAME = "tmp.txt"
 
 # make storage file directory if it doesn't exist
 pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True) 
@@ -31,14 +30,15 @@ class MyCompleter(object):  # Custom completer
 
 def help_message():
     help_message = r"""
+    [ clipr ] 
 
     clp            |    retrieve a value to clipboard
-    clp store      |    store a key value pair
+    clp add        |    store a key value pair
     clp rm         |    remove a key value pair
-    clp list       |    list all keys
+    clp ls         |    list all keys
     clp update     |    update clipr
-    clp help       |    help 
     clp install    |    install clipr
+    clp help       |    help 
 
     """
     print(help_message)
@@ -47,29 +47,19 @@ def help_message():
 def store():
 
     key_store = input("key to store: ")
-    #FIXME check key is not more thana word. check not doble
     value_store = input("value to store: ")
-    with open(DIR_NAME + FILE_NAME, "a+") as text_file:
-        text_file.write(key_store + " " + value_store + "\n")
+    keys = read_to_dict()
+    keys[key_store] = value_store
+    
+    write_to_file(keys)
 
     print("added key: " + key_store)
     sys.exit()
     
 
 def remove():
-    keys = {}
-    try:
-        with open(DIR_NAME + FILE_NAME, "r+") as f:
-            content = f.readlines()
-        for c in content:
-            try:
-                key = c.split(' ', 1)[0]
-                value = c.split(' ', 1)[1]
-                keys[key] = value
-            except: 
-                pass
-    except:
-        pass
+
+    keys = read_to_dict()
 
     # set auto-completer
     completer = MyCompleter(list(keys.keys()))
@@ -83,39 +73,30 @@ def remove():
         print("invalid key")
         sys.exit()
 
-    # remove the key
-    cmd = "grep -v '^%s\\b' %s | cat > %s" % (request, DIR_NAME+FILE_NAME, DIR_NAME+TEMP_NAME)
-    os.system(cmd)
-    cmd = "cat %s > %s" % (DIR_NAME+TEMP_NAME, DIR_NAME+FILE_NAME)
-    os.system(cmd)
-    cmd = "rm %s" % (DIR_NAME+TEMP_NAME)
-    os.system(cmd)
+    keys.pop(request)
+    write_to_file(keys)
+    
     print("removed key: " + request)
     sys.exit()
 
 def list_keys():
-    cmd = "grep -o '^\w*\\b' %s%s | cat" % (DIR_NAME, FILE_NAME)
-    os.system(cmd)
+
+    keys = read_to_dict()
+    print("key".rjust(36) + " -> " + "value")
+    print(("_" * 26).center(76) + "\n")
+    for key in sorted(keys.keys()):
+        print(key.rjust(36) + " -> " + keys[key])
     sys.exit()
 
 def update():
-    print("update")
+    
+    pathname = os.path.dirname(__file__)
+    update = ("cd %s && git status") % (pathname)
+    os.system(update)
 
 def retrieve():
     
-    keys = {}
-    try:
-        with open(DIR_NAME + FILE_NAME, "r+") as f:
-            content = f.readlines()
-        for c in content:
-            try:
-                key = c.split(' ', 1)[0]
-                value = c.split(' ', 1)[1]
-                keys[key] = value
-            except: 
-                pass
-    except:
-        pass
+    keys = read_to_dict()
 
     # set auto-completer
     completer = MyCompleter(list(keys.keys()))
@@ -133,6 +114,7 @@ def retrieve():
     key_value = keys[request].strip()
     cmd = 'printf "%s" | xclip -selection "clipboard"' % (key_value)
     message = 'copied to clipboard: %s' % (key_value)
+
     print(message)
     os.system(cmd)
     sys.exit()
@@ -145,6 +127,28 @@ def install_m():
     cmd = "echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile"
     os.system(cmd)
 
+def read_to_dict():
+    keys = {}
+    try:
+        with open(DIR_NAME + FILE_NAME, "r+") as f:
+            content = f.readlines()
+        for c in content:
+            try:
+                key = c.split(' ', 1)[0]
+                value = c.split(' ', 1)[1]
+                keys[key.strip()] = value.strip()
+            except: 
+                pass
+    except:
+        pass
+    return keys
+
+def write_to_file(keys):
+    with open(DIR_NAME + FILE_NAME, "w") as text_file:
+        for key in sorted(keys):
+            text_file.write(key + " " + keys[key] + "\n")
+
+
 # ===== ===== ===== #
 
 args = sys.argv
@@ -152,10 +156,7 @@ args.pop(0)
 
 if len(args) > 0:
 
-    if args[0] == 'help' or args[0] == '-h' or args[0] == '--help':
-        help_message()
-
-    elif args[0] == 'store':
+    if args[0] == 'add':
         store()
 
     elif args[0] == 'rm':
@@ -164,7 +165,7 @@ if len(args) > 0:
     elif args[0] == 'update':
         update()
         
-    elif args[0] == 'list':
+    elif args[0] == 'ls':
         list_keys()
 
     elif args[0] == 'install-l':
@@ -172,6 +173,9 @@ if len(args) > 0:
 
     elif args[0] == 'install-m':
         install_m()
+
+    else:
+        help_message()
 
 else:
 
