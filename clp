@@ -111,7 +111,7 @@ def retrieve():
 
     if request not in keys.keys():
         print("invalid key")
-        sys.exit()
+        retrive()
 
     # copy matching value to clipboard
     key_value = keys[request].strip()
