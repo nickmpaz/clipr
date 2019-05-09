@@ -32,12 +32,13 @@ def help_message():
     help_message = r"""
     [ clipr ] 
 
-    clp            |    retrieve a value to clipboard
-    clp add        |    store a key value pair
-    clp rm         |    remove a key value pair
-    clp ls         |    list all keys
-    clp update     |    update clipr
-    clp help       |    help 
+    clp             |    retrieve a value to clipboard
+    clp add         |    store a key value pair
+    clp add-long    |    for multi-line values
+    clp rm          |    remove a key value pair
+    clp ls          |    list all keys
+    clp update      |    update clipr
+    clp help        |    help 
 
     """
     print(help_message)
@@ -49,10 +50,32 @@ def store():
     if (len(key_store.split()) > 1):
         print("please enter a one word key")
         store()
-    value_store = input("value to store: ")
-
+    value_store = encode(input('value to store:'))
     keys = read_to_dict()
     keys[key_store] = value_store
+    write_to_file(keys)
+
+    print("added key: " + key_store)
+    sys.exit()
+
+def add_long():
+    key_store = input("key to store: ") 
+    if (len(key_store.split()) > 1):
+        print("please enter a one word key")
+        add_long()
+
+    print('value to store:')
+    current_line = ""
+    value_store = input()
+    while True:
+        current_line = encode(input())
+        if current_line == "DONE":
+            break
+        value_store = value_store + "\\n" + current_line
+    keys = read_to_dict()
+    keys[key_store] = value_store
+    print(keys[key_store])
+
     write_to_file(keys)
 
     print("added key: " + key_store)
@@ -87,7 +110,7 @@ def list_keys():
     print("key".rjust(36) + " -> " + "value")
     print(("_" * 26).center(76) + "\n")
     for key in sorted(keys.keys()):
-        print(key.rjust(36) + " -> " + keys[key])
+        print(key[0:36].rjust(36) + " -> " + keys[key][0:36])
     sys.exit()
 
 def update():
@@ -111,16 +134,24 @@ def retrieve():
 
     if request not in keys.keys():
         print("invalid key")
-        retrive()
+        retrieve()
 
     # copy matching value to clipboard
-    key_value = keys[request].strip()
+    key_value = keys[request]
     cmd = 'printf "%s" | xclip -selection "clipboard"' % (key_value)
+    cmdtest = 'printf "%s"' % (key_value)
     message = 'copied to clipboard: %s' % (key_value)
-
-    print(message)
+    os.system(cmdtest)
     os.system(cmd)
     sys.exit()
+
+def encode(enc_str):
+    enc_str = enc_str.replace('\t',' ' * 4)
+    enc_str = enc_str.replace('\"', '\\"')
+    return enc_str
+
+def clear():
+    os.system('> ' + DIR_NAME + FILE_NAME)
 
 def install_l():
     cmd = "echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc"
@@ -162,6 +193,9 @@ if len(args) > 0:
     if args[0] == 'add':
         store()
 
+    elif args[0] == 'add-long':
+        add_long()
+
     elif args[0] == 'rm':
         remove()
 
@@ -170,6 +204,9 @@ if len(args) > 0:
         
     elif args[0] == 'ls':
         list_keys()
+
+    elif args[0] == 'clear':
+        clear()
 
     elif args[0] == 'install-l':
         install_l()
