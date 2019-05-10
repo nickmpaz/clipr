@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import readline, pathlib, sys, os
+import readline, pathlib, sys, os, curses
 from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
@@ -113,53 +113,96 @@ def list_keys():
         print(key[0:36].rjust(36) + " -> " + keys[key][0:36])
     sys.exit()
 
-def update():
-    
-    pathname = os.path.dirname(__file__)
-    update = ("cd %s && git reset --hard && git pull origin master") % (pathname)
-    os.system(update)
-    sys.exit()
-
 def retrieve():
     
+#     keys = read_to_dict()
+
+#     # set auto-completer
+#     completer = MyCompleter(list(keys.keys()))
+#     readline.set_completer(completer.complete)
+#     readline.parse_and_bind('tab: complete')
+
+#     # get input 
+#     request = input("enter a key: ")
+
+#     if request not in keys.keys():
+#         print("invalid key")
+#         retrieve()
+
+#     # copy matching value to clipboard
+#     key_value = keys[request]
+#     cmd = 'printf "%s" | xclip -selection "clipboard"' % (key_value)
+#     cmdtest = 'printf "%s"' % (key_value)
+#     message = 'copied to clipboard: %s' % (key_value)
+#     os.system(cmdtest)
+#     os.system(cmd)
+#     sys.exit()
+
+# def test():
+
     keys = read_to_dict()
+    key_list = sorted(keys.keys())        
 
-    # set auto-completer
-    completer = MyCompleter(list(keys.keys()))
-    readline.set_completer(completer.complete)
-    readline.parse_and_bind('tab: complete')
+    try:
+        # set up curses
+        win = curses.initscr()
+        curses.noecho()
+        win.keypad(True)
+        curses.curs_set(False)
 
-    # get input 
-    request = input("enter a key: ")
+        query = ""
+        tab_string = ""
 
-    if request not in keys.keys():
-        print("invalid key")
-        retrieve()
+        # prompt and list all keys
+        win.addstr('key:')
+        for key in key_list:
+            win.addstr('\n     ' + key)
 
-    # copy matching value to clipboard
-    key_value = keys[request]
-    cmd = 'printf "%s" | xclip -selection "clipboard"' % (key_value)
-    cmdtest = 'printf "%s"' % (key_value)
-    message = 'copied to clipboard: %s' % (key_value)
-    os.system(cmdtest)
-    os.system(cmd)
-    sys.exit()
+        while True:
+            ch = win.getkey()
+            if ch == 'KEY_BACKSPACE':
+                query = query[:-1]
+            elif ch == '^[':
+                sys.exit()
+            elif ch == '\t':
+                query = tab_string
+            elif ch == '\n':
+                win.keypad(False)
+                curses.echo()
+                curses.endwin()
+                return query, keys[query]
+            else:
+                query += ch
 
-def encode(enc_str):
-    enc_str = enc_str.replace('\t',' ' * 4)
-    enc_str = enc_str.replace('\"', '\\"')
-    return enc_str
+            win.clear()
+            win.addstr('key: ' + query)
+            possible_keys = []
+            for key in key_list:
+                if key.startswith(query):
+                    possible_keys.append(key)
+            tab_string = query                 
+            if len(possible_keys) != 0:
+                # get longest common string
+                tab_string = possible_keys[0]
+                for key in possible_keys:
+                    tab_string = common_start(tab_string, key)
+                    win.addstr('\n     ' + key)
 
-def clear():
-    os.system('> ' + DIR_NAME + FILE_NAME)
+    except:
+        pass
+    finally:
+        win.keypad(False)
+        curses.echo()
+        curses.endwin()
 
-def install_l():
-    cmd = "echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc"
-    os.system(cmd)
-    
-def install_m():
-    cmd = "echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile"
-    os.system(cmd)
+def common_start(sa, sb):
+    def _iter():
+        for a, b in zip(sa, sb):
+            if a == b:
+                yield a
+            else:
+                return
+    return ''.join(_iter())
 
 def read_to_dict():
     keys = {}
@@ -182,6 +225,17 @@ def write_to_file(keys):
         for key in sorted(keys):
             text_file.write(key + " " + keys[key] + "\n")
 
+def encode(enc_str): return enc_str.replace('\t',' ' * 4).replace('\"', '\\"')
+
+def copy_to_clipboard(copystr): os.system('printf "%s" | xclip -selection "clipboard"' % (copystr))
+
+def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
+
+def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(__file__)))
+
+def install_l(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc")
+    
+def install_m(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile")
 
 # ===== ===== ===== #
 
@@ -212,15 +266,17 @@ if len(args) > 0:
         install_l()
 
     elif args[0] == 'install-m':
-        install_m()
+        install_m()        
 
     else:
         help_message()
 
 else:
 
-    retrieve()
-
+    key, value = retrieve()
+    print('key: ' + key)
+    print('value: ' + value)
+    copy_to_clipboard(value)
 
 
 
