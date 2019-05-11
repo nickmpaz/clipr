@@ -6,6 +6,21 @@ from os.path import expanduser
 DIR_NAME = expanduser("~") + "/.clipr/"
 FILE_NAME = "clipr.txt"
 
+KEY_ADD = "key to add: "
+VALUE_ADD = "value to add: "
+KEY_INVALID = "error: keys must not contain spaces"
+KEY_NOT_FOUND = "error: key not found"
+KEY_ADDED = "added key: "
+KEY_REMOVED = "removed key: "
+ADD_END = "DONE"
+VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
+KEY_COPIED = "key -> primary: "
+VALUE_COPIED = "value -> clipboard: "
+
+BACKSPACE = 'KEY_BACKSPACE'
+TAB = '\t'
+ENTER = '\n'
+
 # make storage file directory if it doesn't exist
 pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True) 
 
@@ -46,30 +61,30 @@ def help_message():
 
 def store():
 
-    key_store = input("key to store: ") 
+    key_store = input(KEY_ADD) 
     if (len(key_store.split()) > 1):
-        print("please enter a one word key")
+        print(KEY_INVALID)
         store()
-    value_store = encode(input('value to store:'))
+    value_store = encode(input(VALUE_ADD))
     keys = read_to_dict()
     keys[key_store] = value_store
     write_to_file(keys)
 
-    print("added key: " + key_store)
+    print(KEY_ADDED + key_store)
     sys.exit()
 
 def add_long():
-    key_store = input("key to store: ") 
+    key_store = input(KEY_ADD) 
     if (len(key_store.split()) > 1):
-        print("please enter a one word key")
+        print(KEY_INVALID)
         add_long()
 
-    print('value to store:')
+    print(VALUE_ADD_LONG)
     current_line = ""
     value_store = input()
     while True:
         current_line = encode(input())
-        if current_line == "DONE":
+        if current_line == ADD_END:
             break
         value_store = value_store + "\\n" + current_line
     keys = read_to_dict()
@@ -78,30 +93,7 @@ def add_long():
 
     write_to_file(keys)
 
-    print("added key: " + key_store)
-    sys.exit()
-    
-
-def remove():
-
-    keys = read_to_dict()
-
-    # set auto-completer
-    completer = MyCompleter(list(keys.keys()))
-    readline.set_completer(completer.complete)
-    readline.parse_and_bind('tab: complete')
-
-    # get input 
-    request = input("key to remove: ")
-
-    if request not in keys.keys():
-        print("invalid key")
-        sys.exit()
-
-    keys.pop(request)
-    write_to_file(keys)
-    
-    print("removed key: " + request)
+    print(KEY_ADDED + key_store)
     sys.exit()
 
 def list_keys():
@@ -114,86 +106,78 @@ def list_keys():
     sys.exit()
 
 def retrieve():
-    
-#     keys = read_to_dict()
-
-#     # set auto-completer
-#     completer = MyCompleter(list(keys.keys()))
-#     readline.set_completer(completer.complete)
-#     readline.parse_and_bind('tab: complete')
-
-#     # get input 
-#     request = input("enter a key: ")
-
-#     if request not in keys.keys():
-#         print("invalid key")
-#         retrieve()
-
-#     # copy matching value to clipboard
-#     key_value = keys[request]
-#     cmd = 'printf "%s" | xclip -selection "clipboard"' % (key_value)
-#     cmdtest = 'printf "%s"' % (key_value)
-#     message = 'copied to clipboard: %s' % (key_value)
-#     os.system(cmdtest)
-#     os.system(cmd)
-#     sys.exit()
-
-# def test():
 
     keys = read_to_dict()
     key_list = sorted(keys.keys())        
+    possible_keys = key_list
+    query = ""
+    tab_string = ""
 
     try:
-        # set up curses
-        win = curses.initscr()
-        curses.noecho()
-        win.keypad(True)
-        curses.curs_set(False)
 
-        query = ""
-        tab_string = ""
-
-        # prompt and list all keys
+        # set up curses and initial window
+        win = curses_setup()
         win.addstr('key:')
         for key in key_list:
             win.addstr('\n     ' + key)
 
         while True:
+
             ch = win.getkey()
-            if ch == 'KEY_BACKSPACE':
+
+            if ch == ENTER:
+                if query in possible_keys:
+                    curses_cleanup()
+                    return query, keys[query]
+                else:
+                    query = ""
+                    tab_string = ""
+                    possible_keys = key_list
+            elif ch == BACKSPACE:
                 query = query[:-1]
-            elif ch == '^[':
-                sys.exit()
-            elif ch == '\t':
+                possible_keys = key_list
+            elif ch == TAB:
                 query = tab_string
-            elif ch == '\n':
-                win.keypad(False)
-                curses.echo()
-                curses.endwin()
-                return query, keys[query]
             else:
                 query += ch
 
             win.clear()
             win.addstr('key: ' + query)
-            possible_keys = []
-            for key in key_list:
+            # ====== vvvvvvv ======
+            new_possible_keys = []
+            tab_string = query
+
+            first_iter = True
+            for key in possible_keys:
                 if key.startswith(query):
-                    possible_keys.append(key)
-            tab_string = query                 
-            if len(possible_keys) != 0:
-                # get longest common string
-                tab_string = possible_keys[0]
-                for key in possible_keys:
-                    tab_string = common_start(tab_string, key)
+                    if first_iter:
+                        tab_string = key
+                        first_iter = False
+                    else:
+                        tab_string = common_start(tab_string, key)
+                    new_possible_keys.append(key)                    
                     win.addstr('\n     ' + key)
 
+            if not first_iter:
+                possible_keys = new_possible_keys
+    except KeyboardInterrupt:
+        curses_cleanup()
+        sys.exit()
     except:
         pass
     finally:
-        win.keypad(False)
-        curses.echo()
-        curses.endwin()
+        curses_cleanup()
+
+def curses_setup():
+    win = curses.initscr()
+    curses.noecho()
+    win.keypad(True)
+    curses.curs_set(False)
+    return win
+
+def curses_cleanup():
+    curses.echo()
+    curses.endwin()
 
 def common_start(sa, sb):
     def _iter():
@@ -227,6 +211,8 @@ def write_to_file(keys):
 
 def encode(enc_str): return enc_str.replace('\t',' ' * 4).replace('\"', '\\"')
 
+def copy_to_primary(copystr): os.system('printf "%s" | xclip' % (copystr))
+
 def copy_to_clipboard(copystr): os.system('printf "%s" | xclip -selection "clipboard"' % (copystr))
 
 def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
@@ -251,7 +237,11 @@ if len(args) > 0:
         add_long()
 
     elif args[0] == 'rm':
-        remove()
+        key, value = retrieve()
+        keys = read_to_dict()
+        keys.pop(key)
+        print(KEY_REMOVED + key)
+        write_to_file(keys)
 
     elif args[0] == 'update':
         update()
@@ -274,9 +264,11 @@ if len(args) > 0:
 else:
 
     key, value = retrieve()
-    print('key: ' + key)
-    print('value: ' + value)
+    print(KEY_COPIED + key)
+    print(VALUE_COPIED + value)
+    copy_to_primary(key)
     copy_to_clipboard(value)
+    
 
 
 
