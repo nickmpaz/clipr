@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import pathlib, sys, os, curses, time
+import pathlib, sys, os, curses, time, inspect, os.path
 from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
@@ -207,7 +207,7 @@ def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(__file__)))
 
-def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.abspath(__file__))))
+def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.realpath(__file__))))
 
 def install_l(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc")
     
@@ -250,7 +250,7 @@ if len(args) > 0:
         install_m()        
 
     else:
-        print(help_message)
+        uninstall()
 
 else:
 
