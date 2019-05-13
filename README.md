@@ -9,7 +9,12 @@ copy-and-pasting the same things over and over.
 - look up a key easily with tab auto-complete
 - Clipr copies the key to your primary selection, and the value to clipboard
 
-Never spend time searching documentation to copy text again!
+Never spend time searching documentation to copy text again! Great for:
+
+- usernames and passwords
+- api keys
+- boilerplate code
+- etc
 
 ## Prerequisites
 
