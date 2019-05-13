@@ -249,8 +249,11 @@ if len(args) > 0:
     elif args[0] == 'install-m':
         install_m()        
 
-    else:
+    elif args[0] == 'uninstall':
         uninstall()
+
+    else:
+        print(help_message)
 
 else:
 
