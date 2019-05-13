@@ -2,8 +2,8 @@
 
 ## Automate your Copy-and-Paste Workflow
 
-Clipr is a simple command line tool for those who find themselves copying and 
-pasting the same things over and over.
+Clipr is a simple command line tool for those who find themselves 
+copy-and-pasting the same things over and over.
 
 - use Clipr to store key-value pairs
 - look up a key easily with tab auto-complete
