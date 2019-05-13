@@ -14,8 +14,8 @@ KEY_ADDED = "added key: "
 KEY_REMOVED = "removed key: "
 ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
-KEY_COPIED = "[ PRIMARY ]".center(80, '-') + "\n\n"
-VALUE_COPIED = "\n" + "[ CLIPBOARD ]".center(80, "-") + "\n\n"
+KEY_COPIED = "[ COPIED TO PRIMARY ]".center(80, '-') + "\n\n"
+VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(80, "-") + "\n\n"
 VALUE_COPIED_BOTTOM = "\n\n" + "-" * 80
 
 BACKSPACE = 'KEY_BACKSPACE'
@@ -76,12 +76,12 @@ def add_long():
 def list_keys():
 
     keys = read_to_dict()
-    print("-" * 76 + "\n")
-    print("key".rjust(36) + " -> " + "value\n")
-    print("-" * 76 + "\n")
+    print("-" * 80 + "\n")
+    print("key".rjust(38) + " <> " + "value\n")
+    print("-" * 80 + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:36].rjust(36) + " -> " + keys[key][0:36])
-    print("\n" + "-" * 76)
+        print(key[0:38].rjust(38) + " <> " + keys[key][0:38])
+    print("\n" + "-" * 80)
 
 def retrieve():
 
