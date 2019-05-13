@@ -77,10 +77,10 @@ def list_keys():
 
     keys = read_to_dict()
     print("-" * 80 + "\n")
-    print("key".rjust(38) + " <> " + "value\n")
+    print("key".rjust(38) + " :: " + "value\n")
     print("-" * 80 + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:38].rjust(38) + " <> " + keys[key][0:38])
+        print(key[0:38].rjust(38) + " :: " + keys[key][0:38])
     print("\n" + "-" * 80)
 
 def retrieve():

@@ -5,16 +5,20 @@
 Clipr is a simple command line tool for those who find themselves 
 copy-and-pasting the same things over and over.
 
-- use Clipr to store key-value pairs
+- store easy to remember keys with hard to remember values
 - look up a key easily with tab auto-complete
 - Clipr copies the key to your primary selection, and the value to clipboard
 
 Never spend time searching documentation to copy text again! Great for:
 
 - usernames and passwords
-- api keys
+- api keys and tokens
 - boilerplate code
 - etc
+
+## Demo
+
+https://youtu.be/5Jfa-uHwWxE
 
 ## Prerequisites
 
