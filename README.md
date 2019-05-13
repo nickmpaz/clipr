@@ -47,5 +47,6 @@ Or install with your operating system's package manager. For example:
     clp update      |    update clipr
     clp help        |    help 
 
+    https://github.com/nickmpaz/clipr
 
 

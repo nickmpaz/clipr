@@ -33,6 +33,8 @@ help_message = r"""
     clp update      |    update clipr
     clp help        |    help 
 
+    https://github.com/nickmpaz/clipr
+
     """
 
 # make storage file directory if it doesn't exist
