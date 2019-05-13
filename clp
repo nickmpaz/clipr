@@ -207,6 +207,8 @@ def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(__file__)))
 
+def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.abspath(__file__))))
+
 def install_l(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc")
     
 def install_m(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile")
