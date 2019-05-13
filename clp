@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import readline, pathlib, sys, os, curses
+import pathlib, sys, os, curses, time
 from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
@@ -14,50 +14,29 @@ KEY_ADDED = "added key: "
 KEY_REMOVED = "removed key: "
 ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
-KEY_COPIED = "key -> primary: "
-VALUE_COPIED = "value -> clipboard: "
+KEY_COPIED = "[ PRIMARY ]".center(80, '-') + "\n\n"
+VALUE_COPIED = "\n" + "[ CLIPBOARD ]".center(80, "-") + "\n\n"
+VALUE_COPIED_BOTTOM = "\n\n" + "-" * 80
 
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
 ENTER = '\n'
 
-# make storage file directory if it doesn't exist
-pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True) 
-
-class MyCompleter(object):  # Custom completer
-
-    def __init__(self, options):
-        self.options = sorted(options)
-
-    def complete(self, text, state):
-        if state == 0:  # on first trigger, build possible matches
-            if text:  # cache matches (entries that start with entered text)
-                self.matches = [s for s in self.options 
-                                    if s and s.startswith(text)]
-            else:  # no text entered, all matches possible
-                self.matches = self.options[:]
-
-        # return match indexed by state
-        try: 
-            return self.matches[state]
-        except IndexError:
-            return None
-
-def help_message():
-    help_message = r"""
+help_message = r"""
     [ clipr ] 
 
-    clp             |    retrieve a value to clipboard
-    clp add         |    store a key value pair
-    clp add-long    |    for multi-line values
-    clp rm          |    remove a key value pair
+    clp             |    retrieve a key-value pair
+    clp add         |    store a key-value pair
+    clp add-long    |    for multi-line key-values
+    clp rm          |    remove a key-value pair
     clp ls          |    list all keys
     clp update      |    update clipr
     clp help        |    help 
 
     """
-    print(help_message)
-    sys.exit()
+
+# make storage file directory if it doesn't exist
+pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True)     
 
 def store():
 
@@ -69,7 +48,6 @@ def store():
     keys = read_to_dict()
     keys[key_store] = value_store
     write_to_file(keys)
-
     print(KEY_ADDED + key_store)
     sys.exit()
 
@@ -78,7 +56,6 @@ def add_long():
     if (len(key_store.split()) > 1):
         print(KEY_INVALID)
         add_long()
-
     print(VALUE_ADD_LONG)
     current_line = ""
     value_store = input()
@@ -90,20 +67,19 @@ def add_long():
     keys = read_to_dict()
     keys[key_store] = value_store
     print(keys[key_store])
-
     write_to_file(keys)
-
     print(KEY_ADDED + key_store)
     sys.exit()
 
 def list_keys():
 
     keys = read_to_dict()
-    print("key".rjust(36) + " -> " + "value")
-    print(("_" * 26).center(76) + "\n")
+    print("-" * 76 + "\n")
+    print("key".rjust(36) + " -> " + "value\n")
+    print("-" * 76 + "\n")
     for key in sorted(keys.keys()):
         print(key[0:36].rjust(36) + " -> " + keys[key][0:36])
-    sys.exit()
+    print("\n" + "-" * 76)
 
 def retrieve():
 
@@ -137,13 +113,21 @@ def retrieve():
                 query = query[:-1]
                 possible_keys = key_list
             elif ch == TAB:
-                query = tab_string
+                if query != tab_string:
+                    query = tab_string
+                else:
+                    win.addstr(0,0,"key: ")
+                    win.addstr(0,5, query, curses.A_STANDOUT)
+                    win.refresh()
+                    time.sleep(0.1)
+                    win.addstr(0,0,"key: "+ query)
+                    win.refresh()
+                    continue
             else:
                 query += ch
 
             win.clear()
             win.addstr('key: ' + query)
-            # ====== vvvvvvv ======
             new_possible_keys = []
             tab_string = query
 
@@ -160,6 +144,7 @@ def retrieve():
 
             if not first_iter:
                 possible_keys = new_possible_keys
+
     except KeyboardInterrupt:
         curses_cleanup()
         sys.exit()
@@ -215,6 +200,8 @@ def copy_to_primary(copystr): os.system('printf "%s" | xclip' % (copystr))
 
 def copy_to_clipboard(copystr): os.system('printf "%s" | xclip -selection "clipboard"' % (copystr))
 
+def echo(string): os.system('echo "%s"' % (string))
+
 def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(__file__)))
@@ -240,8 +227,9 @@ if len(args) > 0:
         key, value = retrieve()
         keys = read_to_dict()
         keys.pop(key)
-        print(KEY_REMOVED + key)
         write_to_file(keys)
+        print(KEY_REMOVED + key)
+
 
     elif args[0] == 'update':
         update()
@@ -259,13 +247,13 @@ if len(args) > 0:
         install_m()        
 
     else:
-        help_message()
+        print(help_message)
 
 else:
 
     key, value = retrieve()
     print(KEY_COPIED + key)
-    print(VALUE_COPIED + value)
+    echo(VALUE_COPIED + value + VALUE_COPIED_BOTTOM)
     copy_to_primary(key)
     copy_to_clipboard(value)
     
