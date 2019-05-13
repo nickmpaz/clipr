@@ -16,9 +16,7 @@ Never spend time searching documentation to copy text again! Great for:
 - boilerplate code
 - etc
 
-## Demo
-
-https://youtu.be/5Jfa-uHwWxE
+Demo: https://youtu.be/5Jfa-uHwWxE
 
 ## Prerequisites
 
