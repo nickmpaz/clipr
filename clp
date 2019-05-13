@@ -116,6 +116,7 @@ def retrieve():
                 if query != tab_string:
                     query = tab_string
                 else:
+                    # blink the query line
                     win.addstr(0,0,"key: ")
                     win.addstr(0,5, query, curses.A_STANDOUT)
                     win.refresh()
