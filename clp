@@ -102,7 +102,6 @@ def retrieve():
         while True:
 
             ch = win.getkey()
-
             if ch == ENTER:
                 if query in possible_keys:
                     curses_cleanup()
