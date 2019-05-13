@@ -31,14 +31,15 @@ Or install with your operating system's package manager. For example:
 
     $ clp help
     
-    [ clipr ]
+    [ clipr ] 
 
-    clp            |    retrieve a value to clipboard
-    clp add        |    store a key value pair
-    clp rm         |    remove a key value pair
-    clp ls         |    list all keys
-    clp update     |    update clipr
-    clp help       |    help
+    clp             |    retrieve a key-value pair
+    clp add         |    store a key-value pair
+    clp add-long    |    for multi-line values
+    clp rm          |    remove a key-value pair
+    clp ls          |    list all keys
+    clp update      |    update clipr
+    clp help        |    help 
 
 
 
