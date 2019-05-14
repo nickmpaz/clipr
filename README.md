@@ -2,6 +2,8 @@
 
 ## Automate your Copy-and-Paste Workflow
 
+Demo: https://youtu.be/5Jfa-uHwWxE
+
 Clipr is a simple command line tool for those who find themselves 
 copy-and-pasting the same things over and over.
 
@@ -15,8 +17,6 @@ Never spend time searching documentation to copy text again! Great for:
 - api keys and tokens
 - boilerplate code
 - etc
-
-Demo: https://youtu.be/5Jfa-uHwWxE
 
 ## Prerequisites
 
