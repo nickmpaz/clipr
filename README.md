@@ -32,7 +32,7 @@ Or install with your operating system's package manager. For example:
 ## Install
 
     $ git clone http://github.com/nickmpaz/clipr.git && cd clipr
-    $ sudo ln -s $(pwd)/clipr /usr/local/bin/
+    $ sudo ln -s $(pwd)/clp /usr/local/bin/
 
 ## Uninstall 
 
