@@ -68,7 +68,6 @@ def add_long():
         value_store = value_store + "\\n" + current_line
     keys = read_to_dict()
     keys[key_store] = value_store
-    print(keys[key_store])
     write_to_file(keys)
     print(KEY_ADDED + key_store)
     sys.exit()
