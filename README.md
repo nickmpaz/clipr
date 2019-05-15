@@ -13,8 +13,8 @@ copy-and-pasting the same things over and over.
 
 Never spend time searching documentation to copy text again! Great for:
 
-- usernames and passwords
-- api keys and tokens
+- non-sensitive usernames and passwords
+- frequently created files
 - boilerplate code
 - etc
 
