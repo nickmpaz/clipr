@@ -206,7 +206,7 @@ def echo(string): os.system('echo "%s"' % (string))
 
 def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
 
-def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(__file__)))
+def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(os.path.realpath(__file__))))
 
 def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.realpath(__file__))))
 
