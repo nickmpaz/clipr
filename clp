@@ -26,8 +26,9 @@ help_message = r"""
     [ clipr ] 
 
     clp             |    retrieve a key-value pair
+    clp [key]       |    print a key's value
     clp add         |    store a key-value pair
-    clp add-long    |    for multi-line key-values
+    clp add-long    |    for multi-line values
     clp rm          |    remove a key-value pair
     clp ls          |    list all keys
     clp update      |    update clipr
@@ -233,7 +234,6 @@ if len(args) > 0:
         write_to_file(keys)
         print(KEY_REMOVED + key)
 
-
     elif args[0] == 'update':
         update()
         
@@ -253,8 +253,12 @@ if len(args) > 0:
         uninstall()
 
     else:
-        print(help_message)
-
+        keys = read_to_dict()
+        if args[0] in keys.keys():
+            echo(keys[args[0]])
+        else:
+            print(help_message)
+        
 else:
 
     key, value = retrieve()
