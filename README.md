@@ -47,6 +47,7 @@ Or install with your operating system's package manager. For example:
     [ clipr ] 
 
     clp             |    retrieve a key-value pair
+    clp [key]       |    print a key's value
     clp add         |    store a key-value pair
     clp add-long    |    for multi-line values
     clp rm          |    remove a key-value pair
