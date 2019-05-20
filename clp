@@ -5,6 +5,9 @@ from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
 FILE_NAME = "clipr.txt"
+LS_WIDTH = 80
+LS_DIVIDER = ' :: '
+HALF_WIDTH = int((LS_WIDTH / 2) - (len(LS_DIVIDER) / 2))
 
 KEY_ADD = "key to add: "
 VALUE_ADD = "value to add: "
@@ -14,27 +17,32 @@ KEY_ADDED = "added key: "
 KEY_REMOVED = "removed key: "
 ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
-KEY_COPIED = "[ COPIED TO PRIMARY ]".center(80, '-') + "\n\n"
-VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(80, "-") + "\n\n"
-VALUE_COPIED_BOTTOM = "\n\n" + "-" * 80
+KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
+VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n"
+VALUE_COPIED_BOTTOM = "\n\n" + "-" * LS_WIDTH
 
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
 ENTER = '\n'
 
-help_message = r"""
-    [ clipr ] 
+HELP_MESSAGE = r"""
+    [ clipr ] https://github.com/nickmpaz/clipr
 
-    clp             |    retrieve a key-value pair
-    clp [key]       |    print a key's value
-    clp add         |    store a key-value pair
-    clp add-long    |    for multi-line values
-    clp rm          |    remove a key-value pair
-    clp ls          |    list all keys
-    clp update      |    update clipr
-    clp help        |    help 
+    clp                     |     retrieve a key-value pair
+    clp add                 |     store a key-value pair
+    clp add-long            |     for multi-line values
+    clp rm                  |     remove a key-value pair
+    clp ls                  |     list all keys
 
-    https://github.com/nickmpaz/clipr
+    clp secret              |     retrieve a secret key-value pair
+    clp secret reset        |     (re)set secret password
+    clp secret add          |     store a secret key-value pair
+    clp secret add-long     |     for multi-line values
+    clp secret rm           |     remove a secret key-value pair
+    clp secret ls           |     list all secret keys
+
+    clp update              |     update clipr
+    clp help                |     help 
 
     """
 
@@ -74,14 +82,14 @@ def add_long():
     sys.exit()
 
 def list_keys():
-
+    
     keys = read_to_dict()
-    print("-" * 80 + "\n")
-    print("key".rjust(38) + " :: " + "value\n")
-    print("-" * 80 + "\n")
+    print("-" * LS_WIDTH + "\n")
+    print("key".rjust(HALF_WIDTH) + LS_DIVIDER + "value\n")
+    print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:38].rjust(38) + " :: " + keys[key][0:38])
-    print("\n" + "-" * 80)
+        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + keys[key][0:HALF_WIDTH])
+    print("\n" + "-" * LS_WIDTH)
 
 def retrieve():
 
@@ -155,6 +163,8 @@ def retrieve():
     finally:
         curses_cleanup()
 
+# ===== # ===== # ===== #
+
 def curses_setup():
     win = curses.initscr()
     curses.noecho()
@@ -216,56 +226,61 @@ def install_m(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile")
 
 # ===== ===== ===== #
 
-args = sys.argv
-args.pop(0)
+args = " ".join(sys.argv[1:])
 
-if len(args) > 0:
-
-    if args[0] == 'add':
-        store()
-
-    elif args[0] == 'add-long':
-        add_long()
-
-    elif args[0] == 'rm':
-        key, value = retrieve()
-        keys = read_to_dict()
-        keys.pop(key)
-        write_to_file(keys)
-        print(KEY_REMOVED + key)
-
-    elif args[0] == 'update':
-        update()
-        
-    elif args[0] == 'ls':
-        list_keys()
-
-    elif args[0] == 'clear':
-        clear()
-
-    elif args[0] == 'install-l':
-        install_l()
-
-    elif args[0] == 'install-m':
-        install_m()        
-
-    elif args[0] == 'uninstall':
-        uninstall()
-
-    else:
-        keys = read_to_dict()
-        if args[0] in keys.keys():
-            echo(keys[args[0]])
-        else:
-            print(help_message)
-        
-else:
-
+if args == "":
     key, value = retrieve()
     print(KEY_COPIED + key)
     echo(VALUE_COPIED + value + VALUE_COPIED_BOTTOM)
     copy_to_primary(key)
     copy_to_clipboard(value)
+    sys.exit()
+
+elif args == "add": store()
+
+elif args == "add-long": add_long()
+
+elif args == "rm":
+    key, value = retrieve()
+    keys = read_to_dict()
+    keys.pop(key)
+    write_to_file(keys)
+    print(KEY_REMOVED + key)
+
+elif args == "ls": list_keys()
+
+elif args == "secret": pass
+
+elif args == "secret reset": pass
+
+elif args == "secret add": pass
+
+elif args == "secret add-long": pass 
+
+elif args == "secret rm": pass
+
+elif args == "secret ls": pass
+
+elif args == "install-l": install_l()
+
+elif args == "install-m": install_m
+
+elif args == "uninstall": uninstall()
+
+elif args == "update": update()
+
+elif args == "clear": clear()
+
+else: print(HELP_MESSAGE)  
+
+ 
+
+
+
+
+
+    
+
     
 
 
