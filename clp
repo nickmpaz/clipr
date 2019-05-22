@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-import pathlib, sys, os, curses, time, inspect, os.path
+import pathlib, sys, subprocess, os, curses, time, inspect, json, os.path, getpass
 from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
-FILE_NAME = "clipr.txt"
+PLAIN_TEXT = "clipr-plain.txt"
+ENCRYPTED_TEXT = "clipr-encrypted.txt"
+
 LS_WIDTH = 80
 LS_DIVIDER = ' :: '
 HALF_WIDTH = int((LS_WIDTH / 2) - (len(LS_DIVIDER) / 2))
@@ -18,8 +20,13 @@ KEY_REMOVED = "removed key: "
 ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
 KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
-VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n"
-VALUE_COPIED_BOTTOM = "\n\n" + "-" * LS_WIDTH
+VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
+
+ENCRYPT_CMD = "printf '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
+PASSWORD = "password: "
+SET_PASSWORD = "set password: "
+CONFIRM = "confirm: "
 
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
@@ -33,13 +40,15 @@ HELP_MESSAGE = r"""
     clp add-long            |     for multi-line values
     clp rm                  |     remove a key-value pair
     clp ls                  |     list all keys
+    clp reset               |     reset keys
+
 
     clp secret              |     retrieve a secret key-value pair
-    clp secret reset        |     (re)set secret password
     clp secret add          |     store a secret key-value pair
     clp secret add-long     |     for multi-line values
     clp secret rm           |     remove a secret key-value pair
     clp secret ls           |     list all secret keys
+    clp secret reset        |     reset secret password & keys
 
     clp update              |     update clipr
     clp help                |     help 
@@ -49,51 +58,40 @@ HELP_MESSAGE = r"""
 # make storage file directory if it doesn't exist
 pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True)     
 
-def store():
-
+def add(keys):
     key_store = input(KEY_ADD) 
     if (len(key_store.split()) > 1):
         print(KEY_INVALID)
-        store()
-    value_store = encode(input(VALUE_ADD))
-    keys = read_to_dict()
-    keys[key_store] = value_store
-    write_to_file(keys)
-    print(KEY_ADDED + key_store)
-    sys.exit()
+        return add(keys)
+    value_store = input(VALUE_ADD)
+    keys[key_store] = value_store.replace('\t', '    ')
+    return key_store, keys
 
-def add_long():
+def add_long(keys):
     key_store = input(KEY_ADD) 
     if (len(key_store.split()) > 1):
         print(KEY_INVALID)
-        add_long()
+        return add_long(keys)
     print(VALUE_ADD_LONG)
-    current_line = ""
     value_store = input()
     while True:
-        current_line = encode(input())
+        current_line = input()
         if current_line == ADD_END:
             break
-        value_store = value_store + "\\n" + current_line
-    keys = read_to_dict()
-    keys[key_store] = value_store
-    write_to_file(keys)
-    print(KEY_ADDED + key_store)
-    sys.exit()
+        value_store = value_store + "\n" + current_line
+    keys[key_store] = value_store.replace('\t', '    ')
+    return key_store, keys
 
-def list_keys():
-    
-    keys = read_to_dict()
+def list_keys(keys):
     print("-" * LS_WIDTH + "\n")
     print("key".rjust(HALF_WIDTH) + LS_DIVIDER + "value\n")
     print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + keys[key][0:HALF_WIDTH])
+        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH]))
     print("\n" + "-" * LS_WIDTH)
 
-def retrieve():
+def retrieve(keys):
 
-    keys = read_to_dict()
     key_list = sorted(keys.keys())        
     possible_keys = key_list
     query = ""
@@ -101,7 +99,6 @@ def retrieve():
 
     try:
 
-        # set up curses and initial window
         win = curses_setup()
         win.addstr('key:')
         for key in key_list:
@@ -158,10 +155,6 @@ def retrieve():
     except KeyboardInterrupt:
         curses_cleanup()
         sys.exit()
-    except:
-        pass
-    finally:
-        curses_cleanup()
 
 # ===== # ===== # ===== #
 
@@ -185,26 +178,67 @@ def common_start(sa, sb):
                 return
     return ''.join(_iter())
 
-def read_to_dict():
-    keys = {}
-    try:
-        with open(DIR_NAME + FILE_NAME, "r+") as f:
-            content = f.readlines()
-        for c in content:
-            try:
-                key = c.split(' ', 1)[0]
-                value = c.split(' ', 1)[1]
-                keys[key.strip()] = value.strip()
-            except: 
-                pass
-    except:
-        pass
-    return keys
+def reset_encryption():
+    password = getpass.getpass(SET_PASSWORD)
+    confirm = getpass.getpass(CONFIRM)
+    if password != confirm:
+        return reset_encryption()
+    message = "{}"
+    proc = subprocess.run(
+        ENCRYPT_CMD % (message, password), 
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE,
+        shell=True
+    )
+    return password
 
-def write_to_file(keys):
-    with open(DIR_NAME + FILE_NAME, "w") as text_file:
-        for key in sorted(keys):
-            text_file.write(key + " " + keys[key] + "\n")
+def pass_handler():
+    exists = os.path.isfile(DIR_NAME + ENCRYPTED_TEXT)
+    if not exists: return reset_encryption()
+    #else: return input(PASSWORD)
+    else: return getpass.getpass(PASSWORD)
+
+def read_to_dict(encrypted, password=None):
+    if encrypted:
+        try:
+            proc = subprocess.run(
+                DECRYPT_CMD % password, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
+                shell=True
+            )
+            out = proc.stdout.decode('utf-8')
+            proc.check_returncode()
+            keys = json.loads(out)
+            
+            return keys
+
+        except subprocess.CalledProcessError as e:
+            print("bad password")
+            sys.exit()
+
+    else:
+        try:
+            with open(DIR_NAME + PLAIN_TEXT, "r+") as f:
+                keys = json.load(f)
+       
+        except:
+            pass
+        return keys
+
+def write_to_file(keys, encrypted, password=None):
+    if encrypted:
+        message = json.dumps(keys)
+        proc = subprocess.run(
+            ENCRYPT_CMD % (message, password), 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            shell=True
+        )
+    else:
+        with open(DIR_NAME + PLAIN_TEXT, "w") as text_file:
+            text_file.write(json.dumps(keys))
+
 
 def encode(enc_str): return enc_str.replace('\t',' ' * 4).replace('\"', '\\"')
 
@@ -214,7 +248,7 @@ def copy_to_clipboard(copystr): os.system('printf "%s" | xclip -selection "clipb
 
 def echo(string): os.system('echo "%s"' % (string))
 
-def clear(): os.system('> ' + DIR_NAME + FILE_NAME)
+def reset(): os.system('> ' + DIR_NAME + PLAIN_TEXT)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(os.path.realpath(__file__))))
 
@@ -224,42 +258,82 @@ def install_l(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc")
     
 def install_m(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile")
 
-# ===== ===== ===== #
+# ===== # ===== # ===== #
 
 args = " ".join(sys.argv[1:])
 
 if args == "":
-    key, value = retrieve()
+    keys = read_to_dict(encrypted=False)
+    key, value = retrieve(keys)
     print(KEY_COPIED + key)
-    echo(VALUE_COPIED + value + VALUE_COPIED_BOTTOM)
+    echo(VALUE_COPIED % value)
     copy_to_primary(key)
     copy_to_clipboard(value)
-    sys.exit()
 
-elif args == "add": store()
+elif args == "reset": 
+    reset()
 
-elif args == "add-long": add_long()
+elif args == "add": 
+    keys = read_to_dict(encrypted=False)   
+    key_added, keys = add(keys)
+    write_to_file(keys, encrypted=False)
+    print(KEY_ADDED + key_added)
+
+elif args == "add-long": 
+    keys = read_to_dict(encrypted=False)
+    key_added, keys = add_long(keys)
+    write_to_file(keys, encrypted=False)
+    print(KEY_ADDED + key_added)
 
 elif args == "rm":
-    key, value = retrieve()
-    keys = read_to_dict()
+    keys = read_to_dict(encrypted=False)
+    key, value = retrieve(keys)
     keys.pop(key)
-    write_to_file(keys)
+    write_to_file(keys, encrypted=False)
     print(KEY_REMOVED + key)
 
-elif args == "ls": list_keys()
+elif args == "ls": 
+    keys = read_to_dict(encrypted=False)
+    list_keys(keys)
 
-elif args == "secret": pass
+elif args == "secret": 
+    password = pass_handler()
+    keys = read_to_dict(encrypted=True, password=password)
+    key, value = retrieve(keys)
+    print(KEY_COPIED + key)
+    echo(VALUE_COPIED % value)
+    copy_to_primary(key)
+    copy_to_clipboard(value)
 
-elif args == "secret reset": pass
+elif args == "secret reset": 
+    reset_encryption()
 
-elif args == "secret add": pass
+elif args == "secret add": 
+    password = pass_handler()
+    keys = read_to_dict(encrypted=True, password=password)   
+    key_added, keys = add(keys)
+    write_to_file(keys, encrypted=True, password=password)
+    print(KEY_ADDED + key_added)
 
-elif args == "secret add-long": pass 
+elif args == "secret add-long": 
+    password = pass_handler()
+    keys = read_to_dict(encrypted=True, password=password)
+    key_added, keys = add_long(keys)
+    write_to_file(keys, encrypted=True, password=password)
+    print(KEY_ADDED + key_added)
 
-elif args == "secret rm": pass
+elif args == "secret rm": 
+    password = pass_handler()
+    keys = read_to_dict(encrypted=True, password=password)
+    key, value = retrieve(keys)
+    keys.pop(key)
+    write_to_file(keys, encrypted=True, password=password)
+    print(KEY_REMOVED + key)
 
-elif args == "secret ls": pass
+elif args == "secret ls": 
+    password = pass_handler()
+    keys = read_to_dict(encrypted=True, password=password)
+    list_keys(keys)
 
 elif args == "install-l": install_l()
 
@@ -268,8 +342,6 @@ elif args == "install-m": install_m
 elif args == "uninstall": uninstall()
 
 elif args == "update": update()
-
-elif args == "clear": clear()
 
 else: print(HELP_MESSAGE)  
 
