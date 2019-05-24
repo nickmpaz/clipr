@@ -26,7 +26,7 @@ ENCRYPT_CMD = "printf '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + EN
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
 SET_PASSWORD = "set password: "
-CONFIRM = "confirm: "
+CONFIRM = "confirm password: "
 
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
@@ -34,6 +34,7 @@ ENTER = '\n'
 
 HELP_MESSAGE = r"""
     [ clipr ] https://github.com/nickmpaz/clipr
+    ______________________________________________________________
 
     clp                     |     retrieve a key-value pair
     clp add                 |     store a key-value pair
@@ -41,7 +42,6 @@ HELP_MESSAGE = r"""
     clp rm                  |     remove a key-value pair
     clp ls                  |     list all keys
     clp reset               |     reset keys
-
 
     clp secret              |     retrieve a secret key-value pair
     clp secret add          |     store a secret key-value pair
@@ -52,7 +52,7 @@ HELP_MESSAGE = r"""
 
     clp update              |     update clipr
     clp help                |     help 
-
+    _____________________________________________________________
     """
 
 # make storage file directory if it doesn't exist
@@ -79,7 +79,8 @@ def add_long(keys):
         if current_line == ADD_END:
             break
         value_store = value_store + "\n" + current_line
-    keys[key_store] = value_store.replace('\t', '    ')
+    #keys[key_store] = value_store.replace('\t', '    ')
+    keys[key_store] = value_store.replace('\t', '    ').replace('\\', '\\\\')
     return key_store, keys
 
 def list_keys(keys):
@@ -87,8 +88,10 @@ def list_keys(keys):
     print("key".rjust(HALF_WIDTH) + LS_DIVIDER + "value\n")
     print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH]))
-    print("\n" + "-" * LS_WIDTH)
+        #print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH]))  
+        #print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + str(keys[key][0:HALF_WIDTH].encode('unicode-escape')))
+        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + keys[key][0:HALF_WIDTH]) 
+
 
 def retrieve(keys):
 
@@ -254,10 +257,6 @@ def update(): os.system(("cd %s && git reset --hard && git pull origin master") 
 
 def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.realpath(__file__))))
 
-def install_l(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bashrc")
-    
-def install_m(): os.system("echo 'export PATH=$PATH:'`pwd` >> ~/.bash_profile")
-
 # ===== # ===== # ===== #
 
 args = " ".join(sys.argv[1:])
@@ -334,10 +333,6 @@ elif args == "secret ls":
     password = pass_handler()
     keys = read_to_dict(encrypted=True, password=password)
     list_keys(keys)
-
-elif args == "install-l": install_l()
-
-elif args == "install-m": install_m
 
 elif args == "uninstall": uninstall()
 
