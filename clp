@@ -6,9 +6,11 @@ from os.path import expanduser
 DIR_NAME = expanduser("~") + "/.clipr/"
 PLAIN_TEXT = "clipr-plain.txt"
 ENCRYPTED_TEXT = "clipr-encrypted.txt"
-LS_WIDTH = 80
-LS_DIVIDER = ' :: '
-HALF_WIDTH = (LS_WIDTH // 2) - (len(LS_DIVIDER) // 2)
+ROWS, COLUMNS = os.popen('stty size', 'r').read().split()
+LS_WIDTH = int(COLUMNS)
+LS_DIVIDER = '  --->  '
+LS_LEFT = (LS_WIDTH // 3) - (len(LS_DIVIDER) // 2)
+LS_RIGHT = LS_WIDTH - LS_LEFT - len(LS_DIVIDER)
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
 ENTER = '\n'
@@ -85,10 +87,10 @@ def add_long(keys):
 
 def list_keys(keys):
     print("-" * LS_WIDTH + "\n")
-    print("key".rjust(HALF_WIDTH) + LS_DIVIDER + "value\n")
+    print("key".rjust(LS_LEFT) + LS_DIVIDER + "value\n")
     print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH])[1:-1])
+        print(key[0:LS_LEFT].rjust(LS_LEFT) + LS_DIVIDER + repr(keys[key])[1:LS_RIGHT])
     print("\n" + "-" * LS_WIDTH + "\n")
 
 def retrieve(keys, prompt):
@@ -248,8 +250,7 @@ def echo(string): os.system("printf '%%s\n' \"%s\"" % (string.replace('"','\\"')
 def reset_plain(): os.system('printf "{}" > ' + DIR_NAME + PLAIN_TEXT)
 
 def reset(encrypted):
-    in1 = input(RESET_CONFIRM)
-    if in1.lower() not in ['yes', 'y']: sys.exit()
+    if input(RESET_CONFIRM).lower() not in ['yes', 'y']: sys.exit()
     if encrypted: reset_encryption()
     else: reset_plain()
     print(RESET)
