@@ -12,7 +12,7 @@ copy-and-pasting the same things over and over.
 - Clipr copies the key to your primary selection, and the value to clipboard
 
 Key-value pairs can be stored as plain text for convenience, or as pgp encrypted 
-text for security.Never spend time searching documentation to copy text again! 
+text for security. Never spend time searching documentation to copy text again! 
 Great for:
 
 - usernames and passwords
