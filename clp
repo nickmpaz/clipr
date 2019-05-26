@@ -6,11 +6,14 @@ from os.path import expanduser
 DIR_NAME = expanduser("~") + "/.clipr/"
 PLAIN_TEXT = "clipr-plain.txt"
 ENCRYPTED_TEXT = "clipr-encrypted.txt"
-
 LS_WIDTH = 80
 LS_DIVIDER = ' :: '
 HALF_WIDTH = (LS_WIDTH // 2) - (len(LS_DIVIDER) // 2)
-
+BACKSPACE = 'KEY_BACKSPACE'
+TAB = '\t'
+ENTER = '\n'
+RETRIEVE = "retrieve key: "
+REMOVE = "remove key: "
 KEY_ADD = "key to add: "
 VALUE_ADD = "value to add: "
 KEY_INVALID = "error: keys must not contain spaces"
@@ -21,23 +24,14 @@ ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
 KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
 VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
-
-ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+ENCRYPT_CMD = "echo '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
 SET_PASSWORD = "set password: "
 CONFIRM = "confirm password: "
 BAD_PASSWORD = "incorrect password"
-
-WRITE_CMD = "printf '%%s' '%s' > " + DIR_NAME + PLAIN_TEXT
-
-RETRIEVE = "retrieve key: "
-REMOVE = "remove key: "
-
-BACKSPACE = 'KEY_BACKSPACE'
-TAB = '\t'
-ENTER = '\n'
-
+RESET_CONFIRM = "reset keys? [y/N]: "
+RESET = "keys have been reset"
 HELP_MESSAGE = r"""
     [ clipr ] [ https://github.com/nickmpaz/clipr ]
     ______________________________________________________________
@@ -96,7 +90,6 @@ def list_keys(keys):
     for key in sorted(keys.keys()):
         print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH])[1:-1])
     print("\n" + "-" * LS_WIDTH + "\n")
-
 
 def retrieve(keys, prompt):
 
@@ -252,7 +245,14 @@ def copy_to_clipboard(copystr): os.system("printf '%%s' \"%s\" | xclip -selectio
 
 def echo(string): os.system("printf '%%s\n' \"%s\"" % (string.replace('"','\\"')))
 
-def reset(): os.system('printf "{}" > ' + DIR_NAME + PLAIN_TEXT)
+def reset_plain(): os.system('printf "{}" > ' + DIR_NAME + PLAIN_TEXT)
+
+def reset(encrypted):
+    in1 = input(RESET_CONFIRM)
+    if in1.lower() not in ['yes', 'y']: sys.exit()
+    if encrypted: reset_encryption()
+    else: reset_plain()
+    print(RESET)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(os.path.realpath(__file__))))
 
@@ -272,7 +272,7 @@ try:
         copy_to_clipboard(value)
 
     elif args == "reset": 
-        reset()
+        reset(encrypted=False)
 
     elif args == "add": 
         keys = read_to_dict(encrypted=False)   
@@ -307,7 +307,7 @@ try:
         copy_to_clipboard(value)
 
     elif args == "secret reset": 
-        reset_encryption()
+        reset(encrypted=True)
 
     elif args == "secret add": 
         password = pass_handler()
