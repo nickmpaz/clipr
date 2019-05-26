@@ -26,10 +26,13 @@ ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
 KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
 VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
-ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+#ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+ENCRYPT_CMD = "printf '%%s' \"%s\" | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
 SET_PASSWORD = "set password: "
+NO_MATCH = "passwords did not match"
 CONFIRM = "confirm password: "
 BAD_PASSWORD = "incorrect password"
 RESET_CONFIRM = "reset keys? [y/N]: "
@@ -90,7 +93,7 @@ def list_keys(keys):
     print("key".rjust(LS_LEFT) + LS_DIVIDER + "value\n")
     print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        print(key[0:LS_LEFT].rjust(LS_LEFT) + LS_DIVIDER + repr(keys[key])[1:LS_RIGHT])
+        print(key[0:LS_LEFT].rjust(LS_LEFT) + LS_DIVIDER + repr(keys[key])[1:-1][:LS_RIGHT])
     print("\n" + "-" * LS_WIDTH + "\n")
 
 def retrieve(keys, prompt):
@@ -187,6 +190,7 @@ def reset_encryption():
     password = getpass.getpass(SET_PASSWORD)
     confirm = getpass.getpass(CONFIRM)
     if password != confirm:
+        print(NO_MATCH)
         return reset_encryption()
     message = "{}"
     proc = subprocess.run(
@@ -229,8 +233,10 @@ def read_to_dict(encrypted, password=None):
 
 def write_to_file(keys, encrypted, password=None):
     if encrypted:
-
-        message = json.dumps(keys)
+            
+        #message = json.dumps(keys)
+        for key in keys.keys(): keys[key] = keys[key].replace('"', '\\"')
+        message = json.dumps(keys).replace('\\"','"').replace('"', '\\"')
         proc = subprocess.run(
             ENCRYPT_CMD % (message, password), 
             stdout=subprocess.PIPE, 
