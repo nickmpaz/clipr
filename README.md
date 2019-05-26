@@ -11,9 +11,12 @@ copy-and-pasting the same things over and over.
 - look up a key quickly with tab auto-complete
 - Clipr copies the key to your primary selection, and the value to clipboard
 
-Never spend time searching documentation to copy text again! Great for:
+Key-value pairs can be stored as plain text for convenience, or as pgp encrypted 
+text for security.Never spend time searching documentation to copy text again! 
+Great for:
 
-- non-sensitive usernames and passwords
+- usernames and passwords
+- api keys and tokens
 - frequently created files
 - boilerplate code
 - etc
@@ -44,17 +47,25 @@ Or install with your operating system's package manager. For example:
 
     $ clp help
     
-    [ clipr ] 
-
-    clp             |    retrieve a key-value pair
-    clp [key]       |    print a key's value
-    clp add         |    store a key-value pair
-    clp add-long    |    for multi-line values
-    clp rm          |    remove a key-value pair
-    clp ls          |    list all keys
-    clp update      |    update clipr
-    clp help        |    help 
-
-    https://github.com/nickmpaz/clipr
+    [ clipr ] [ https://github.com/nickmpaz/clipr ]
+    ______________________________________________________________
+                            |
+    clp                     |     retrieve a key-value pair
+    clp add                 |     store a key-value pair
+    clp add-long            |     for multi-line values
+    clp rm                  |     remove a key-value pair
+    clp ls                  |     list all keys
+    clp reset               |     reset keys
+                            |
+    clp secret              |     retrieve a secret key-value pair
+    clp secret add          |     store a secret key-value pair
+    clp secret add-long     |     for multi-line values
+    clp secret rm           |     remove a secret key-value pair
+    clp secret ls           |     list all secret keys
+    clp secret reset        |     reset secret password & keys
+                            |
+    clp update              |     update clipr
+    clp help                |     help 
+    _____________________________________________________________
 
 
