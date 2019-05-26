@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import pathlib, sys, subprocess, os, curses, time, inspect, json, os.path, getpass
+import pathlib, sys, subprocess, os, curses, time, inspect, json, re, os.path, getpass
 from os.path import expanduser
 
 DIR_NAME = expanduser("~") + "/.clipr/"
@@ -9,7 +9,7 @@ ENCRYPTED_TEXT = "clipr-encrypted.txt"
 
 LS_WIDTH = 80
 LS_DIVIDER = ' :: '
-HALF_WIDTH = int((LS_WIDTH / 2) - (len(LS_DIVIDER) / 2))
+HALF_WIDTH = (LS_WIDTH // 2) - (len(LS_DIVIDER) // 2)
 
 KEY_ADD = "key to add: "
 VALUE_ADD = "value to add: "
@@ -22,34 +22,40 @@ VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
 KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
 VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
 
-ENCRYPT_CMD = "printf '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
+ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
 SET_PASSWORD = "set password: "
 CONFIRM = "confirm password: "
+BAD_PASSWORD = "incorrect password"
+
+WRITE_CMD = "printf '%%s' '%s' > " + DIR_NAME + PLAIN_TEXT
+
+RETRIEVE = "retrieve key: "
+REMOVE = "remove key: "
 
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
 ENTER = '\n'
 
 HELP_MESSAGE = r"""
-    [ clipr ] https://github.com/nickmpaz/clipr
+    [ clipr ] [ https://github.com/nickmpaz/clipr ]
     ______________________________________________________________
-
+                            |
     clp                     |     retrieve a key-value pair
     clp add                 |     store a key-value pair
     clp add-long            |     for multi-line values
     clp rm                  |     remove a key-value pair
     clp ls                  |     list all keys
     clp reset               |     reset keys
-
+                            |
     clp secret              |     retrieve a secret key-value pair
     clp secret add          |     store a secret key-value pair
     clp secret add-long     |     for multi-line values
     clp secret rm           |     remove a secret key-value pair
     clp secret ls           |     list all secret keys
     clp secret reset        |     reset secret password & keys
-
+                            |
     clp update              |     update clipr
     clp help                |     help 
     _____________________________________________________________
@@ -64,7 +70,7 @@ def add(keys):
         print(KEY_INVALID)
         return add(keys)
     value_store = input(VALUE_ADD)
-    keys[key_store] = value_store.replace('\t', '    ')
+    keys[key_store] = value_store
     return key_store, keys
 
 def add_long(keys):
@@ -79,8 +85,8 @@ def add_long(keys):
         if current_line == ADD_END:
             break
         value_store = value_store + "\n" + current_line
-    #keys[key_store] = value_store.replace('\t', '    ')
-    keys[key_store] = value_store.replace('\t', '    ').replace('\\', '\\\\')
+
+    keys[key_store] = value_store
     return key_store, keys
 
 def list_keys(keys):
@@ -88,12 +94,11 @@ def list_keys(keys):
     print("key".rjust(HALF_WIDTH) + LS_DIVIDER + "value\n")
     print("-" * LS_WIDTH + "\n")
     for key in sorted(keys.keys()):
-        #print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH]))  
-        #print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + str(keys[key][0:HALF_WIDTH].encode('unicode-escape')))
-        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + keys[key][0:HALF_WIDTH]) 
+        print(key[0:HALF_WIDTH].rjust(HALF_WIDTH) + LS_DIVIDER + repr(keys[key][0:HALF_WIDTH])[1:-1])
+    print("\n" + "-" * LS_WIDTH + "\n")
 
 
-def retrieve(keys):
+def retrieve(keys, prompt):
 
     key_list = sorted(keys.keys())        
     possible_keys = key_list
@@ -103,9 +108,9 @@ def retrieve(keys):
     try:
 
         win = curses_setup()
-        win.addstr('key:')
+        win.addstr(prompt)
         for key in key_list:
-            win.addstr('\n     ' + key)
+            win.addstr('\n' + " " * len(prompt) + key)
 
         while True:
 
@@ -126,18 +131,18 @@ def retrieve(keys):
                     query = tab_string
                 else:
                     # blink the query line
-                    win.addstr(0,0,"key: ")
-                    win.addstr(0,5, query, curses.A_STANDOUT)
+                    win.addstr(0,0,prompt)
+                    win.addstr(query, curses.A_STANDOUT)
                     win.refresh()
                     time.sleep(0.1)
-                    win.addstr(0,0,"key: "+ query)
+                    win.addstr(0,0,prompt + query)
                     win.refresh()
                     continue
             else:
                 query += ch
 
             win.clear()
-            win.addstr('key: ' + query)
+            win.addstr(prompt + query)
             new_possible_keys = []
             tab_string = query
 
@@ -150,14 +155,16 @@ def retrieve(keys):
                     else:
                         tab_string = common_start(tab_string, key)
                     new_possible_keys.append(key)                    
-                    win.addstr('\n     ' + key)
+                    win.addstr('\n' + " " * len(prompt) + key)
 
             if not first_iter:
                 possible_keys = new_possible_keys
 
-    except KeyboardInterrupt:
+            win.addstr(0, len(prompt + query), tab_string[len(query):], curses.A_STANDOUT)
+
+    except:
         curses_cleanup()
-        sys.exit()
+        raise
 
 # ===== # ===== # ===== #
 
@@ -198,7 +205,6 @@ def reset_encryption():
 def pass_handler():
     exists = os.path.isfile(DIR_NAME + ENCRYPTED_TEXT)
     if not exists: return reset_encryption()
-    #else: return input(PASSWORD)
     else: return getpass.getpass(PASSWORD)
 
 def read_to_dict(encrypted, password=None):
@@ -210,27 +216,25 @@ def read_to_dict(encrypted, password=None):
                 stderr=subprocess.PIPE,
                 shell=True
             )
-            out = proc.stdout.decode('utf-8')
             proc.check_returncode()
-            keys = json.loads(out)
-            
-            return keys
+            return json.loads(proc.stdout)
 
         except subprocess.CalledProcessError as e:
-            print("bad password")
+            print(BAD_PASSWORD)
             sys.exit()
 
     else:
         try:
             with open(DIR_NAME + PLAIN_TEXT, "r+") as f:
                 keys = json.load(f)
-       
+    
         except:
             pass
         return keys
 
 def write_to_file(keys, encrypted, password=None):
     if encrypted:
+
         message = json.dumps(keys)
         proc = subprocess.run(
             ENCRYPT_CMD % (message, password), 
@@ -242,105 +246,105 @@ def write_to_file(keys, encrypted, password=None):
         with open(DIR_NAME + PLAIN_TEXT, "w") as text_file:
             text_file.write(json.dumps(keys))
 
+def copy_to_primary(copystr): os.system("printf '%%s' \"%s\" | xclip" % (copystr.replace('"', '\\"')))
 
-def encode(enc_str): return enc_str.replace('\t',' ' * 4).replace('\"', '\\"')
+def copy_to_clipboard(copystr): os.system("printf '%%s' \"%s\" | xclip -selection \"clipboard\"" % (copystr.replace('"', '\\"')))
 
-def copy_to_primary(copystr): os.system('printf "%s" | xclip' % (copystr))
+def echo(string): os.system("printf '%%s\n' \"%s\"" % (string.replace('"','\\"')))
 
-def copy_to_clipboard(copystr): os.system('printf "%s" | xclip -selection "clipboard"' % (copystr))
-
-def echo(string): os.system('echo "%s"' % (string))
-
-def reset(): os.system('> ' + DIR_NAME + PLAIN_TEXT)
+def reset(): os.system('printf "{}" > ' + DIR_NAME + PLAIN_TEXT)
 
 def update(): os.system(("cd %s && git reset --hard && git pull origin master") % (os.path.dirname(os.path.realpath(__file__))))
 
 def uninstall(): os.system("rm -r %s && rm -rf %s" % (DIR_NAME, os.path.dirname(os.path.realpath(__file__))))
 
 # ===== # ===== # ===== #
+try:
 
-args = " ".join(sys.argv[1:])
+    args = " ".join(sys.argv[1:])
 
-if args == "":
-    keys = read_to_dict(encrypted=False)
-    key, value = retrieve(keys)
-    print(KEY_COPIED + key)
-    echo(VALUE_COPIED % value)
-    copy_to_primary(key)
-    copy_to_clipboard(value)
+    if args == "":
+        keys = read_to_dict(encrypted=False)
+        key, value = retrieve(keys, RETRIEVE)
+        print(KEY_COPIED + key)
+        echo(VALUE_COPIED % value)
+        copy_to_primary(key)
+        copy_to_clipboard(value)
 
-elif args == "reset": 
-    reset()
+    elif args == "reset": 
+        reset()
 
-elif args == "add": 
-    keys = read_to_dict(encrypted=False)   
-    key_added, keys = add(keys)
-    write_to_file(keys, encrypted=False)
-    print(KEY_ADDED + key_added)
+    elif args == "add": 
+        keys = read_to_dict(encrypted=False)   
+        key_added, keys = add(keys)
+        write_to_file(keys, encrypted=False)
+        print(KEY_ADDED + key_added)
 
-elif args == "add-long": 
-    keys = read_to_dict(encrypted=False)
-    key_added, keys = add_long(keys)
-    write_to_file(keys, encrypted=False)
-    print(KEY_ADDED + key_added)
+    elif args == "add-long": 
+        keys = read_to_dict(encrypted=False)
+        key_added, keys = add_long(keys)
+        write_to_file(keys, encrypted=False)
+        print(KEY_ADDED + key_added)
 
-elif args == "rm":
-    keys = read_to_dict(encrypted=False)
-    key, value = retrieve(keys)
-    keys.pop(key)
-    write_to_file(keys, encrypted=False)
-    print(KEY_REMOVED + key)
+    elif args == "rm":
+        keys = read_to_dict(encrypted=False)
+        key, value = retrieve(keys, REMOVE)
+        keys.pop(key)
+        write_to_file(keys, encrypted=False)
+        print(KEY_REMOVED + key)
 
-elif args == "ls": 
-    keys = read_to_dict(encrypted=False)
-    list_keys(keys)
+    elif args == "ls": 
+        keys = read_to_dict(encrypted=False)
+        list_keys(keys)
 
-elif args == "secret": 
-    password = pass_handler()
-    keys = read_to_dict(encrypted=True, password=password)
-    key, value = retrieve(keys)
-    print(KEY_COPIED + key)
-    echo(VALUE_COPIED % value)
-    copy_to_primary(key)
-    copy_to_clipboard(value)
+    elif args == "secret": 
+        password = pass_handler()
+        keys = read_to_dict(encrypted=True, password=password)
+        key, value = retrieve(keys, RETRIEVE)
+        print(KEY_COPIED + key)
+        echo(VALUE_COPIED % value)
+        copy_to_primary(key)
+        copy_to_clipboard(value)
 
-elif args == "secret reset": 
-    reset_encryption()
+    elif args == "secret reset": 
+        reset_encryption()
 
-elif args == "secret add": 
-    password = pass_handler()
-    keys = read_to_dict(encrypted=True, password=password)   
-    key_added, keys = add(keys)
-    write_to_file(keys, encrypted=True, password=password)
-    print(KEY_ADDED + key_added)
+    elif args == "secret add": 
+        password = pass_handler()
+        keys = read_to_dict(encrypted=True, password=password)   
+        key_added, keys = add(keys)
+        write_to_file(keys, encrypted=True, password=password)
+        print(KEY_ADDED + key_added)
 
-elif args == "secret add-long": 
-    password = pass_handler()
-    keys = read_to_dict(encrypted=True, password=password)
-    key_added, keys = add_long(keys)
-    write_to_file(keys, encrypted=True, password=password)
-    print(KEY_ADDED + key_added)
+    elif args == "secret add-long": 
+        password = pass_handler()
+        keys = read_to_dict(encrypted=True, password=password)
+        key_added, keys = add_long(keys)
+        write_to_file(keys, encrypted=True, password=password)
+        print(KEY_ADDED + key_added)
 
-elif args == "secret rm": 
-    password = pass_handler()
-    keys = read_to_dict(encrypted=True, password=password)
-    key, value = retrieve(keys)
-    keys.pop(key)
-    write_to_file(keys, encrypted=True, password=password)
-    print(KEY_REMOVED + key)
+    elif args == "secret rm": 
+        password = pass_handler()
+        keys = read_to_dict(encrypted=True, password=password)
+        key, value = retrieve(keys, REMOVE)
+        keys.pop(key)
+        write_to_file(keys, encrypted=True, password=password)
+        print(KEY_REMOVED + key)
 
-elif args == "secret ls": 
-    password = pass_handler()
-    keys = read_to_dict(encrypted=True, password=password)
-    list_keys(keys)
+    elif args == "secret ls": 
+        password = pass_handler()
+        keys = read_to_dict(encrypted=True, password=password)
+        list_keys(keys)
 
-elif args == "uninstall": uninstall()
+    elif args == "uninstall": uninstall()
 
-elif args == "update": update()
+    elif args == "update": update()
 
-else: print(HELP_MESSAGE)  
+    else: print(HELP_MESSAGE)  
 
- 
+except KeyboardInterrupt:
+    print()
+    sys.exit()
 
 
 
