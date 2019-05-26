@@ -8,11 +8,12 @@ PLAIN_TEXT = "clipr-plain.txt"
 ENCRYPTED_TEXT = "clipr-encrypted.txt"
 ROWS, COLUMNS = os.popen('stty size', 'r').read().split()
 LS_WIDTH = int(COLUMNS)
-LS_DIVIDER = '  --->  '
+LS_DIVIDER = '  ----->  '
 LS_LEFT = (LS_WIDTH // 3) - (len(LS_DIVIDER) // 2)
 LS_RIGHT = LS_WIDTH - LS_LEFT - len(LS_DIVIDER)
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
+TAB_SPACES = 4
 ENTER = '\n'
 RETRIEVE = "retrieve key: "
 REMOVE = "remove key: "
@@ -28,7 +29,6 @@ KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
 VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
 #ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
 ENCRYPT_CMD = "printf '%%s' \"%s\" | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
-
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
 SET_PASSWORD = "set password: "
@@ -59,7 +59,6 @@ HELP_MESSAGE = r"""
     clp help                |     help 
     _____________________________________________________________
     """
-
 # make storage file directory if it doesn't exist
 pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True)     
 
@@ -68,7 +67,7 @@ def add(keys):
     if (len(key_store.split()) > 1):
         print(KEY_INVALID)
         return add(keys)
-    value_store = input(VALUE_ADD)
+    value_store = clean_input(input(VALUE_ADD))
     keys[key_store] = value_store
     return key_store, keys
 
@@ -78,9 +77,9 @@ def add_long(keys):
         print(KEY_INVALID)
         return add_long(keys)
     print(VALUE_ADD_LONG)
-    value_store = input()
+    value_store = clean_input(input())
     while True:
-        current_line = input()
+        current_line = clean_input(input())
         if current_line == ADD_END:
             break
         value_store = value_store + "\n" + current_line
@@ -185,6 +184,8 @@ def common_start(sa, sb):
             else:
                 return
     return ''.join(_iter())
+
+def clean_input(string): return string.replace(TAB, ' ' * TAB_SPACES)
 
 def reset_encryption():
     password = getpass.getpass(SET_PASSWORD)
