@@ -8,9 +8,10 @@ PLAIN_TEXT = "clipr-plain.txt"
 ENCRYPTED_TEXT = "clipr-encrypted.txt"
 ROWS, COLUMNS = os.popen('stty size', 'r').read().split()
 LS_WIDTH = int(COLUMNS)
-LS_DIVIDER = '  ----->  '
+LS_DIVIDER = '  |  '
 LS_LEFT = (LS_WIDTH // 3) - (len(LS_DIVIDER) // 2)
 LS_RIGHT = LS_WIDTH - LS_LEFT - len(LS_DIVIDER)
+LS_NEWLINE = ' ' * LS_LEFT + LS_DIVIDER
 BACKSPACE = 'KEY_BACKSPACE'
 TAB = '\t'
 TAB_SPACES = 4
@@ -27,7 +28,6 @@ ADD_END = "DONE"
 VALUE_ADD_LONG = "value to add (enter '%s' to submit): " % (ADD_END)
 KEY_COPIED = "[ COPIED TO PRIMARY ]".center(LS_WIDTH, '-') + "\n\n"
 VALUE_COPIED = "\n" + "[ COPIED TO CLIPBOARD ]".center(LS_WIDTH, "-") + "\n\n%s\n\n" + "-" * LS_WIDTH
-#ENCRYPT_CMD = "printf '%%s' '%s' | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
 ENCRYPT_CMD = "printf '%%s' \"%s\" | gpg -ca --batch --passphrase %s > " + DIR_NAME + ENCRYPTED_TEXT
 DECRYPT_CMD = 'cat ' + DIR_NAME + ENCRYPTED_TEXT + ' | gpg -daq --batch --passphrase %s'
 PASSWORD = "password: "
@@ -88,12 +88,16 @@ def add_long(keys):
     return key_store, keys
 
 def list_keys(keys):
-    print("-" * LS_WIDTH + "\n")
-    print("key".rjust(LS_LEFT) + LS_DIVIDER + "value\n")
-    print("-" * LS_WIDTH + "\n")
+    print("-" * LS_WIDTH)
+    print(LS_NEWLINE)
+    print("key".rjust(LS_LEFT) + LS_DIVIDER + "value")
+    print(LS_NEWLINE)
+    print("-" * LS_WIDTH)
+    print(LS_NEWLINE)
     for key in sorted(keys.keys()):
         print(key[0:LS_LEFT].rjust(LS_LEFT) + LS_DIVIDER + repr(keys[key])[1:-1][:LS_RIGHT])
-    print("\n" + "-" * LS_WIDTH + "\n")
+    print(LS_NEWLINE)
+    print("-" * LS_WIDTH + "\n")
 
 def retrieve(keys, prompt):
 
@@ -153,11 +157,12 @@ def retrieve(keys, prompt):
                         tab_string = common_start(tab_string, key)
                     new_possible_keys.append(key)                    
                     win.addstr('\n' + " " * len(prompt) + key)
-
-            if not first_iter:
-                possible_keys = new_possible_keys
+                        
+            # if there are possible keys
+            if not first_iter: possible_keys = new_possible_keys
 
             win.addstr(0, len(prompt + query), tab_string[len(query):], curses.A_STANDOUT)
+            
 
     except:
         curses_cleanup()

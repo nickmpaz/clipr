@@ -6,7 +6,6 @@ Demo: https://youtu.be/5Jfa-uHwWxE
 
 Clipr is a simple command line tool for those who find themselves 
 copy-and-pasting the same things over and over.
-
 - store easy to remember keys with hard to remember values
 - look up a key quickly with tab auto-complete
 - Clipr copies the key to your primary selection, and the value to clipboard
@@ -14,7 +13,6 @@ copy-and-pasting the same things over and over.
 Key-value pairs can be stored as plain text for convenience, or as pgp encrypted 
 text for security. Never spend time searching documentation to copy text again! 
 Great for:
-
 - usernames and passwords
 - api keys and tokens
 - frequently created files
@@ -23,14 +21,19 @@ Great for:
 
 ## Prerequisites
 
-Clipr requires xclip, a command line interface to X selections. Check that 
-it's installed with:
+Clipr requires:
+- xclip: a command line interface to X selections
+- GnuPG: a PGP encryption and signing tool
+
+Check that they're installed with:
     
     $ xclip -version
+    $ gpg --version
 
-Or install with your operating system's package manager. For example:
+Or install with your operating system's package manager:
 
     $ sudo apt install xclip
+    $ sudo apt install gpg
 
 ## Install
 
