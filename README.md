@@ -19,7 +19,7 @@ Great for:
 - boilerplate code
 - etc
 
-## Prerequisites
+## Requirements 
 
 Clipr requires:
 - xclip: a command line interface to X selections
