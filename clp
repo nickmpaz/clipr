@@ -121,9 +121,15 @@ def retrieve(keys, prompt):
                     curses_cleanup()
                     return query, keys[query]
                 else:
-                    query = ""
-                    tab_string = ""
-                    possible_keys = key_list
+                    # blink the query line
+                    win.addstr(0,0,prompt)
+                    win.addstr(query, curses.A_STANDOUT)
+                    win.refresh()
+                    time.sleep(0.1)
+                    win.addstr(0,0,prompt + query)
+                    win.refresh()
+                    continue
+
             elif ch == BACKSPACE:
                 query = query[:-1]
                 possible_keys = key_list
